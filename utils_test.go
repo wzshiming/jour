@@ -1,142 +1,85 @@
 package jour
 
 import (
-	"errors"
-	"log/slog"
 	"testing"
-
-	"github.com/wzshiming/jour/internal/format"
 )
 
-func Test_formatLog(t *testing.T) {
+func TestParseLevel(t *testing.T) {
 	type args struct {
-		msg       string
-		attrsStr  string
-		level     Level
-		termWidth int
+		s string
 	}
 	tests := []struct {
-		name string
-		args args
-		want string
+		name    string
+		args    args
+		wantL   Level
+		wantErr bool
 	}{
 		{
-			name: "msg",
+			name: "debug",
 			args: args{
-				msg: "msg",
+				s: "debug",
 			},
-			want: "msg\n",
+			wantL: LevelDebug,
 		},
 		{
-			name: "msg with attrs",
+			name: "info",
 			args: args{
-				msg:      "msg",
-				attrsStr: `a=b`,
+				s: "info",
 			},
-			want: "msg a=b\n",
+			wantL: LevelInfo,
 		},
 		{
-			name: "msg with attrs and level",
+			name: "-4",
 			args: args{
-				msg:      "msg",
-				attrsStr: `a=b`,
-				level:    LevelDebug,
+				s: "-4",
 			},
-			want: "\x1b[0;36mDEBUG\x1b[0m msg a=b\n",
+			wantL: LevelDebug,
 		},
 		{
-			name: "msg with attrs and termWidth",
+			name: "0",
 			args: args{
-				msg:       "msg",
-				attrsStr:  `a=b`,
-				termWidth: 20,
+				s: "0",
 			},
-			want: "msg              a=b\n",
+			wantL: LevelInfo,
 		},
 		{
-			name: "msg with attrs and level and termWidth",
+			name: "4",
 			args: args{
-				msg:       "msg",
-				attrsStr:  `a=b`,
-				level:     LevelDebug,
-				termWidth: 20,
+				s: "4",
 			},
-			want: "\x1b[0;36mDEBUG\x1b[0m msg        a=b\n",
+			wantL: LevelWarn,
 		},
 		{
-			name: "msg with attrs and 5 termWidth",
+			name: "8",
 			args: args{
-				msg:       "msg",
-				attrsStr:  `a=b`,
-				termWidth: 5,
+				s: "8",
 			},
-			want: "msg a=b\n",
+			wantL: LevelError,
 		},
 		{
-			name: "msg with attrs and 6 termWidth",
+			name: "info+1",
 			args: args{
-				msg:       "msg",
-				attrsStr:  `a=b`,
-				termWidth: 6,
+				s: "info+1",
 			},
-			want: "msg a=b\n",
+			wantL: LevelInfo + 1,
 		},
 		{
-			name: "msg with attrs and 7 termWidth",
+			name: "info-1",
 			args: args{
-				msg:       "msg",
-				attrsStr:  `a=b`,
-				termWidth: 7,
+				s: "info-1",
 			},
-			want: "msg a=b\n",
-		},
-		{
-			name: "msg with attrs and 8 termWidth",
-			args: args{
-				msg:       "msg",
-				attrsStr:  `a=b`,
-				termWidth: 8,
-			},
-			want: "msg  a=b\n",
+			wantL: LevelInfo - 1,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := formatLog(tt.args.msg, tt.args.attrsStr, tt.args.level, tt.args.termWidth); got != tt.want {
-				t.Errorf("formatLog() = %q, want %q", got, tt.want)
+			gotL, err := ParseLevel(tt.args.s)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ParseLevel() error = %v, wantErr %v", err, tt.wantErr)
+				return
 			}
-		})
-	}
-}
-
-func Test_formatValue(t *testing.T) {
-	type args struct {
-		val slog.Value
-	}
-	tests := []struct {
-		name string
-		args args
-		want string
-	}{
-		{
-			name: "format for error",
-			args: args{
-				val: slog.AnyValue(errors.New("unknown command \"subcommand\" for \"jour\"")),
-			},
-			want: format.QuoteIfNeed(errors.New("unknown command \"subcommand\" for \"jour\"").Error()),
-		},
-		{
-			name: "format for string",
-			args: args{
-				val: slog.AnyValue("unknown command \"subcommand\" for \"jour\""),
-			},
-			want: format.QuoteIfNeed("unknown command \"subcommand\" for \"jour\""),
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := formatValue(tt.args.val); got != tt.want {
-				t.Errorf("formatValue() = %v, want %v", got, tt.want)
+			if gotL != tt.wantL {
+				t.Errorf("ParseLevel() gotL = %v, want %v", gotL, tt.wantL)
 			}
 		})
 	}
